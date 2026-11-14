@@ -1,4 +1,4 @@
-name: rima
+name: trebuchet
 
 # Every service is a separate container and image: deploying one never restarts
 # the others. In production the deployer writes
@@ -21,7 +21,7 @@ x-hardening: &hardening
 services:
   caddy:
     <<: *hardening
-    image: ${CADDY_IMAGE:-rima/caddy:local}
+    image: ${CADDY_IMAGE:-trebuchet/caddy:local}
     build: ./caddy
     # No capabilities at all: low ports are allowed for unprivileged users
     # inside this network namespace only.
@@ -46,7 +46,7 @@ services:
 
   note:
     <<: *hardening
-    image: ${NOTE_IMAGE:-rima/note:local}
+    image: ${NOTE_IMAGE:-trebuchet/note:local}
     build: ../services/note
     environment:
       NOTE_MAX_NOTES: "100000"

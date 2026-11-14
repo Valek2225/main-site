@@ -22,7 +22,7 @@ CONFIG="${TREBUCHET_DEPLOY_CONFIG:-/etc/trebuchet/deploy.env}"
 : "${TREBUCHET_REPO:?owner/name of the GitHub repository}"
 : "${TREBUCHET_CHECKOUT:?path to the git checkout on this server}"
 : "${TREBUCHET_ALLOWED_SIGNERS:?path to git allowed_signers file}"
-: "${TREBUCHET_SERVICES:=note caddy}"
+: "${TREBUCHET_SERVICES:=note vault caddy}"
 : "${TREBUCHET_STATE_DIR:=/var/lib/trebuchet-deploy}"
 : "${TREBUCHET_HEALTH_TIMEOUT:=60}"
 

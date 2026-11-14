@@ -3,6 +3,7 @@ package server
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
 	"fmt"
@@ -35,12 +36,25 @@ type Server struct {
 type staticFile struct {
 	body        []byte
 	contentType string
+	etag        string // content hash: lets the browser revalidate without re-downloading
 }
 
 var contentTypes = map[string]string{
-	".js":  "text/javascript; charset=utf-8",
-	".css": "text/css; charset=utf-8",
-	".svg": "image/svg+xml",
+	".js":    "text/javascript; charset=utf-8",
+	".css":   "text/css; charset=utf-8",
+	".svg":   "image/svg+xml",
+	".woff2": "font/woff2",
+}
+
+// staticFiles is the complete allow-list of files under web/static that are
+// served. Fonts: IBM Plex (SIL OFL 1.1), Cyrillic and Latin1 subsets only,
+// taken from the official IBM/plex releases (plex-sans 1.1.0, plex-mono 2.5.0).
+var staticFiles = []string{
+	"note.js", "theme.js", "note.css", "favicon.svg",
+	"fonts/IBMPlexSans-Regular-Cyrillic.woff2", "fonts/IBMPlexSans-Regular-Latin1.woff2",
+	"fonts/IBMPlexSans-Medium-Cyrillic.woff2", "fonts/IBMPlexSans-Medium-Latin1.woff2",
+	"fonts/IBMPlexSans-SemiBold-Cyrillic.woff2", "fonts/IBMPlexSans-SemiBold-Latin1.woff2",
+	"fonts/IBMPlexMono-Regular-Cyrillic.woff2", "fonts/IBMPlexMono-Regular-Latin1.woff2",
 }
 
 func New(cfg Config, st *store.Store) (*Server, error) {
@@ -63,7 +77,7 @@ func New(cfg Config, st *store.Store) (*Server, error) {
 // loadStatic reads an explicit allow-list of embedded files: no directory
 // listing, no path traversal, no surprises.
 func (s *Server) loadStatic() error {
-	for _, name := range []string{"note.js", "note.css", "favicon.svg"} {
+	for _, name := range staticFiles {
 		body, err := fs.ReadFile(web.Static, "static/"+name)
 		if err != nil {
 			return fmt.Errorf("static %s: %w", name, err)
@@ -72,7 +86,12 @@ func (s *Server) loadStatic() error {
 		if !ok {
 			return fmt.Errorf("static %s: unknown content type", name)
 		}
-		s.static[name] = staticFile{body: body, contentType: ct}
+		sum := sha256.Sum256(body)
+		s.static[name] = staticFile{
+			body:        body,
+			contentType: ct,
+			etag:        `"` + base64.RawURLEncoding.EncodeToString(sum[:16]) + `"`,
+		}
 	}
 	return nil
 }
@@ -91,8 +110,9 @@ func (s *Server) renderPages() error {
 		return err
 	}
 	s.pageData = map[string]string{
-		"JSIntegrity":  sri(s.static["note.js"].body),
-		"CSSIntegrity": sri(s.static["note.css"].body),
+		"JSIntegrity":    sri(s.static["note.js"].body),
+		"ThemeIntegrity": sri(s.static["theme.js"].body),
+		"CSSIntegrity":   sri(s.static["note.css"].body),
 	}
 	for _, name := range pageNames {
 		if err := tpl.ExecuteTemplate(io.Discard, name, s.pageData); err != nil {
@@ -111,6 +131,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /{$}", s.page("create.html"))
 	mux.HandleFunc("GET /n/{id}", s.page("read.html"))
 	mux.HandleFunc("GET /static/{name}", s.handleStatic)
+	mux.HandleFunc("GET /static/fonts/{name}", s.handleStatic)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		_, _ = w.Write([]byte("ok"))
@@ -151,12 +172,19 @@ func (s *Server) page(name string) http.HandlerFunc {
 }
 
 func (s *Server) handleStatic(w http.ResponseWriter, r *http.Request) {
-	f, ok := s.static[r.PathValue("name")]
+	// The key is rebuilt from the matched route, never from the raw path, and
+	// looked up in the allow-list map: nothing outside it can be served.
+	key := r.PathValue("name")
+	if r.Pattern == "GET /static/fonts/{name}" {
+		key = "fonts/" + key
+	}
+	f, ok := s.static[key]
 	if !ok {
 		http.NotFound(w, r)
 		return
 	}
 	w.Header().Set("Content-Type", f.contentType)
+	w.Header().Set("ETag", f.etag)
 	w.Header().Set("Cache-Control", "no-cache") // always revalidate: SRI hashes change with every release
 	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(f.body))
 }

@@ -1,4 +1,4 @@
-# CI for rima.su.
+# CI for Trebuchet.
 #
 # Supply-chain rules applied here:
 #   - every action is pinned by full commit SHA (tags can be force-pushed: see the
@@ -127,8 +127,8 @@ jobs:
         run: |
           set -euo pipefail
           export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
-          docker build -t rima/note:ci services/note
-          docker build -t rima/caddy:ci deploy/caddy
+          docker build -t trebuchet/note:ci services/note
+          docker build -t trebuchet/caddy:ci deploy/caddy
 
       - name: Test Caddy runs as uid 65532 with no capabilities
         run: |
@@ -139,7 +139,7 @@ jobs:
             --sysctl net.ipv4.ip_unprivileged_port_start=0 \
             --tmpfs /tmp:uid=65532,gid=65532 \
             -v "$RUNNER_TEMP/Caddyfile:/etc/caddy/Caddyfile:ro" \
-            -p 127.0.0.1:18080:80 rima/caddy:ci
+            -p 127.0.0.1:18080:80 trebuchet/caddy:ci
           ok=0
           for i in $(seq 1 20); do
             if curl -fsS http://127.0.0.1:18080/ | grep -q ok; then ok=1; break; fi
@@ -154,7 +154,7 @@ jobs:
         run: |
           set -euo pipefail
           docker run -d --name note-test --read-only --cap-drop ALL \
-            --security-opt no-new-privileges:true -p 127.0.0.1:18081:8080 rima/note:ci
+            --security-opt no-new-privileges:true -p 127.0.0.1:18081:8080 trebuchet/note:ci
           ok=0
           for i in $(seq 1 20); do
             if curl -fsS http://127.0.0.1:18081/healthz | grep -q ok; then ok=1; break; fi
@@ -167,7 +167,7 @@ jobs:
       - name: Scan images (trivy)
         run: |
           set -euo pipefail
-          for img in rima/note:ci rima/caddy:ci; do
+          for img in trebuchet/note:ci trebuchet/caddy:ci; do
             "$RUNNER_TEMP/bin/trivy" image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed "$img"
           done
 
@@ -199,8 +199,8 @@ jobs:
         run: |
           set -euo pipefail
           export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
-          docker build -t rima/note:ci services/note
-          docker build -t rima/caddy:ci deploy/caddy
+          docker build -t trebuchet/note:ci services/note
+          docker build -t trebuchet/caddy:ci deploy/caddy
 
       - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
 
@@ -214,8 +214,8 @@ jobs:
           echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
           : > "$RUNNER_TEMP/digests.txt"
           for svc in note caddy; do
-            ref="ghcr.io/${owner}/rima-${svc}"
-            docker tag "rima/${svc}:ci" "${ref}:sha-${GITHUB_SHA}"
+            ref="ghcr.io/${owner}/trebuchet-${svc}"
+            docker tag "trebuchet/${svc}:ci" "${ref}:sha-${GITHUB_SHA}"
             docker push "${ref}:sha-${GITHUB_SHA}"
             digest="$(docker inspect --format '{{index .RepoDigests 0}}' "${ref}:sha-${GITHUB_SHA}")"
             digest="${digest##*@}"
@@ -226,7 +226,6 @@ jobs:
             cosign attest --yes --type cyclonedx --predicate "$RUNNER_TEMP/sbom-${svc}.json" "${ref}@${digest}"
             echo "${svc} ${ref} ${digest}" >> "$RUNNER_TEMP/digests.txt"
           done
-          docker logout ghcr.io
           cat "$RUNNER_TEMP/digests.txt"
 
       - name: Read digests
@@ -251,3 +250,7 @@ jobs:
           subject-name: ${{ steps.d.outputs.caddy_name }}
           subject-digest: ${{ steps.d.outputs.caddy_digest }}
           push-to-registry: true
+
+      - name: Log out of ghcr.io
+        if: always()
+        run: docker logout ghcr.io

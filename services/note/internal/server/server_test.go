@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
+	"html"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -206,6 +208,21 @@ func TestSecurityHeaders(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), `integrity="sha384-`) {
 		t.Error("page must use SRI")
 	}
+
+	// Every script and stylesheet on both pages carries an SRI hash, and no
+	// inline styles or scripts sneak in (CSP would block them in the browser).
+	for _, path := range []string{"/", "/n/" + strings.Repeat("A", 22)} {
+		body := html.UnescapeString(do(h, "GET", path, "", nil).Body.String())
+		for _, asset := range []string{"/static/note.js", "/static/theme.js", "/static/note.css"} {
+			re := regexp.MustCompile(regexp.QuoteMeta(asset) + `" integrity="sha384-[A-Za-z0-9+/=]{64}"`)
+			if !re.MatchString(body) {
+				t.Errorf("%s: %s without SRI", path, asset)
+			}
+		}
+		if regexp.MustCompile(`\sstyle=|<script>|\son[a-z]+=`).MatchString(body) {
+			t.Errorf("%s: inline style or script found", path)
+		}
+	}
 }
 
 func TestPathTraversalNotServed(t *testing.T) {
@@ -227,9 +244,40 @@ func TestStaticAllowList(t *testing.T) {
 			t.Errorf("%s must not be served", p)
 		}
 	}
-	if rec := do(h, "GET", "/static/note.js", "", nil); rec.Code != 200 ||
-		!strings.HasPrefix(rec.Header().Get("Content-Type"), "text/javascript") {
-		t.Errorf("note.js: %d %s", rec.Code, rec.Header().Get("Content-Type"))
+	for _, p := range []string{"/static/note.js", "/static/theme.js"} {
+		if rec := do(h, "GET", p, "", nil); rec.Code != 200 ||
+			!strings.HasPrefix(rec.Header().Get("Content-Type"), "text/javascript") {
+			t.Errorf("%s: %d %s", p, rec.Code, rec.Header().Get("Content-Type"))
+		}
+	}
+	if rec := do(h, "GET", "/static/partials.html", "", nil); rec.Code == http.StatusOK {
+		t.Error("templates must not be served as static files")
+	}
+
+	// Fonts: only the allow-listed woff2 files, revalidated by ETag.
+	font := "/static/fonts/IBMPlexSans-Regular-Cyrillic.woff2"
+	rec := do(h, "GET", font, "", nil)
+	if rec.Code != 200 || rec.Header().Get("Content-Type") != "font/woff2" ||
+		!bytes.HasPrefix(rec.Body.Bytes(), []byte("wOF2")) {
+		t.Fatalf("font: %d %q", rec.Code, rec.Header().Get("Content-Type"))
+	}
+	etag := rec.Header().Get("ETag")
+	if etag == "" {
+		t.Fatal("font: no ETag")
+	}
+	if rec := do(h, "GET", font, "", map[string]string{"If-None-Match": etag}); rec.Code != http.StatusNotModified {
+		t.Errorf("font revalidation: %d, want 304", rec.Code)
+	}
+	for _, p := range []string{
+		"/static/fonts/LICENSE-IBM-Plex.txt", "/static/fonts/", "/static/fonts/note.js",
+		"/static/fonts/..%2fnote.js", "/static/fonts/IBMPlexSans-Bold-Latin1.woff2",
+	} {
+		if rec := do(h, "GET", p, "", nil); rec.Code == http.StatusOK {
+			t.Errorf("%s must not be served", p)
+		}
+	}
+	if !strings.Contains(do(h, "GET", "/", "", nil).Header().Get("Content-Security-Policy"), "font-src 'self'") {
+		t.Error("CSP must allow same-origin fonts only")
 	}
 }
 

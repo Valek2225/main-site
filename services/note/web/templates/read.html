@@ -1,40 +1,60 @@
 {{define "read.html"}}<!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="referrer" content="no-referrer">
-<meta name="robots" content="noindex, nofollow">
-<title>note · rima.su</title>
-<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/static/note.css" integrity="{{.CSSIntegrity}}">
-<script src="/static/note.js" integrity="{{.JSIntegrity}}" defer></script>
-</head>
+{{template "head" .}}</head>
 <body data-page="read">
-<main>
-  <header>
-    <h1>note<span class="dim">.rima.su</span></h1>
-  </header>
+{{template "icons"}}
+<header class="site gut">
+  {{template "brand"}}
+</header>
 
-  <section id="intro">
-    <p>Вам прислали одноразовое сообщение.</p>
-    <p class="dim">После открытия оно будет удалено с сервера навсегда. Открывайте, когда будете готовы его сохранить.</p>
-    <button id="reveal" type="button">Показать сообщение</button>
-  </section>
-
-  <section id="result" hidden>
-    <label for="message" class="sr-only">Сообщение</label>
-    <textarea id="message" rows="10" readonly spellcheck="false"></textarea>
-    <div class="row">
-      <span class="dim small">Сообщение уже удалено с сервера. После закрытия страницы его не вернуть.</span>
-      <button id="copy" type="button">Копировать</button>
+<main class="gut">
+  <!-- before opening -->
+  <section class="col center" id="intro">
+    <div class="stack">
+      <div class="state-ic seal"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg></div>
+      <h1>Вам передали записку</h1>
+      <p class="lead">Её можно открыть один раз. После этого она исчезнет с сервера.</p>
+      <button class="btn L seal" id="reveal" type="button">Открыть записку</button>
+      <span class="cap">Расшифровка идёт в браузере. Сервер текст не видит.</span>
+      <p class="error" id="error" role="alert" hidden></p>
     </div>
   </section>
 
-  <p id="error" class="error" role="alert" hidden></p>
+  <!-- read -->
+  <section class="col" id="result" hidden>
+    <h1>Записка</h1>
+    <span class="meta readmeta"><svg class="i" aria-hidden="true"><use href="#i-flameoff"/></svg><span id="opened-at">удалена с сервера</span></span>
+    <div class="box text" id="message" tabindex="0" aria-label="Текст записки"></div>
+    <div class="row-actions">
+      <button class="btn primary" id="copy" type="button"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span>Скопировать текст</span></button>
+      <span class="small">После закрытия страницы текст не вернуть.</span>
+    </div>
+    <a class="link again" href="/">Создать свою записку</a>
+  </section>
 
-  <footer class="dim small"><a href="/">Создать своё сообщение</a></footer>
+  <!-- gone: already read, expired or never existed -->
+  <section class="col center" id="gone" hidden>
+    <div class="stack">
+      <div class="state-ic gone"><svg class="i" aria-hidden="true"><use href="#i-hourglass"/></svg></div>
+      <h1>Записки нет</h1>
+      <p class="lead">Её уже открыли или истёк срок. Если вы её не открывали, значит её прочитал кто-то другой. Сообщите отправителю.</p>
+      <a class="btn secondary" href="/">Создать свою записку</a>
+    </div>
+  </section>
+
+  <!-- broken link: no key or truncated key -->
+  <section class="col center" id="broken" hidden>
+    <div class="stack">
+      <div class="state-ic gone"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></div>
+      <h1>Ссылка повреждена</h1>
+      <p class="lead">В ней нет ключа или он неполный. Попросите отправителя прислать ссылку целиком, вместе с частью после #.</p>
+      <a class="btn secondary" href="/">Создать свою записку</a>
+    </div>
+  </section>
 </main>
+
+{{template "footer"}}
 </body>
 </html>
 {{end}}

@@ -1,56 +1,64 @@
 {{define "create.html"}}<!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="referrer" content="no-referrer">
-<meta name="robots" content="noindex, nofollow">
-<title>note · rima.su</title>
-<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/static/note.css" integrity="{{.CSSIntegrity}}">
-<script src="/static/note.js" integrity="{{.JSIntegrity}}" defer></script>
-</head>
+{{template "head" .}}</head>
 <body data-page="create">
-<main>
-  <header>
-    <h1>note<span class="dim">.rima.su</span></h1>
-    <p class="lead">Одноразовое зашифрованное сообщение. Его можно открыть один раз, после этого оно удаляется навсегда.</p>
-  </header>
+{{template "icons"}}
+<header class="site gut">
+  {{template "brand"}}
+  <a class="btn secondary" href="https://app.rima.su/">Войти</a>
+</header>
 
-  <form id="create-form" autocomplete="off">
-    <label for="text" class="sr-only">Сообщение</label>
-    <textarea id="text" rows="10" placeholder="Текст сообщения…" required
-      spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"
-      data-gramm="false" data-1p-ignore data-lpignore="true"></textarea>
-    <div class="row">
-      <span id="counter" class="dim"></span>
-      <label class="ttl">Удалить, если не открыли, через
-        <select id="ttl">
-          <option value="3600">1 час</option>
-          <option value="86400" selected>1 день</option>
-          <option value="604800">7 дней</option>
-        </select>
+<main class="gut">
+  <!-- create -->
+  <section class="col" id="create-view">
+    <h1>Новая записка</h1>
+    <p class="lead">Текст шифруется в браузере. Откроется один раз, после прочтения удаляется с сервера навсегда.</p>
+    <form id="create-form" class="form" autocomplete="off">
+      <label class="ta" for="text">
+        <textarea id="text" rows="10" placeholder="Текст записки" required
+          aria-label="Текст записки"
+          spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"
+          data-gramm="false" data-1p-ignore data-lpignore="true"></textarea>
+        <span class="meta" id="counter" aria-live="polite"></span>
       </label>
-    </div>
-    <button id="submit" type="submit">Создать ссылку</button>
-  </form>
-
-  <section id="result" hidden>
-    <p>Ссылка готова. Её можно открыть <b>только один раз</b>.</p>
-    <div class="row">
-      <input id="link" type="text" readonly spellcheck="false" aria-label="Ссылка на сообщение">
-      <button id="copy" type="button">Копировать</button>
-    </div>
-    <p class="dim small">Ключ расшифровки находится в ссылке после символа #. Он не уходит на сервер, поэтому сервер не может прочитать сообщение. Кто получит ссылку целиком, тот и прочтёт сообщение, так что отправляйте её по надёжному каналу.</p>
-    <button id="again" type="button" class="secondary">Создать ещё одно</button>
+      <div class="opts">
+        <span class="small" id="ttl-label">Удалить, если не открыли</span>
+        <div class="seg" role="group" aria-labelledby="ttl-label" id="ttl">
+          <button type="button" aria-pressed="false" data-ttl="3600">1 час</button>
+          <button type="button" aria-pressed="true" data-ttl="86400">1 день</button>
+          <button type="button" aria-pressed="false" data-ttl="604800">7 дней</button>
+        </div>
+        <span class="sp"></span>
+        <button class="btn primary" id="submit" type="submit">Создать ссылку</button>
+      </div>
+      <p class="error" id="error" role="alert" hidden></p>
+    </form>
   </section>
 
-  <p id="error" class="error" role="alert" hidden></p>
-
-  <footer class="dim small">
-    Шифрование AES-256-GCM в вашем браузере. Сервер хранит только зашифрованные данные и только в оперативной памяти.
-  </footer>
+  <!-- link ready -->
+  <section class="col" id="result" hidden>
+    <h1>Ссылка готова</h1>
+    <p class="lead">Её можно открыть один раз. Отправьте её по каналу, которому доверяете.</p>
+    <div class="box linkbox">
+      <code id="link" aria-label="Ссылка на записку"></code>
+      <div class="acts">
+        <button class="btn primary" id="copy" type="button"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span>Скопировать</span></button>
+        <button class="btn secondary" id="share" type="button" hidden><svg class="i" aria-hidden="true"><use href="#i-share"/></svg><span>Поделиться</span></button>
+      </div>
+    </div>
+    <div class="facts-list">
+      <div><svg class="i" aria-hidden="true"><use href="#i-link"/></svg><span>Ключ — часть ссылки после #. Браузер не отправляет его на сервер. Кто получит ссылку целиком, тот и прочитает записку.</span></div>
+      <div><svg class="i" aria-hidden="true"><use href="#i-hourglass"/></svg><span id="ttl-fact">Удалится через 1 день, если её не откроют.</span></div>
+      <div><svg class="i" aria-hidden="true"><use href="#i-flameoff"/></svg><span>После открытия удаляется сразу. Второй раз ссылка покажет «Записки нет».</span></div>
+    </div>
+    <div class="row-actions again">
+      <button class="btn secondary" id="again" type="button">Создать ещё одну</button>
+    </div>
+  </section>
 </main>
+
+{{template "footer"}}
 </body>
 </html>
 {{end}}

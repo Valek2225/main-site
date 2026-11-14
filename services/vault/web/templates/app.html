@@ -1,0 +1,309 @@
+{{define "app.html"}}<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0f12" media="(prefers-color-scheme: dark)">
+<title>Trebuchet</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css" integrity="{{.CSSIntegrity}}">
+<script src="/static/theme.js" integrity="{{.ThemeIntegrity}}"></script>
+<script src="/static/app.js" integrity="{{.JSIntegrity}}" defer></script>
+</head>
+<body data-words-integrity="{{.WordsIntegrity}}" data-blocklist-integrity="{{.BlocklistIntegrity}}">
+
+<svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <!-- Tabler Icons (MIT), outline, stroke 1.75 via CSS -->
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-half" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M12 3v18"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z"/><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0z"/><path d="M15 9h.01"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/></symbol>
+  <symbol id="i-userplus" viewBox="0 0 24 24"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M16 19h6"/><path d="M19 16v6"/><path d="M6 21v-2a4 4 0 0 1 4 -4h4"/></symbol>
+  <symbol id="i-finger" viewBox="0 0 24 24"><path d="M18.9 7a8 8 0 0 1 1.1 5v1a6 6 0 0 0 .8 3"/><path d="M8 11a4 4 0 0 1 8 0v1a10 10 0 0 0 2 6"/><path d="M12 11v2a14 14 0 0 0 2.5 8"/><path d="M8 15a18 18 0 0 0 1.8 6"/><path d="M4.9 19a22 22 0 0 1 -.9 -7v-1a8 8 0 0 1 12 -6.95"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></symbol>
+</svg>
+
+<!-- ================= signed out ================= -->
+
+<header class="top gut">
+  <span class="brand">
+    <svg class="mark" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect class="mk-bg" width="24" height="24" rx="5"/><path class="mk-arm" d="M6.5 17.5L16 8" stroke-width="2.2" stroke-linecap="round"/><rect class="mk-weight" x="14.5" y="14.5" width="4.5" height="4.5"/></svg>
+    Trebuchet
+  </span>
+  <span class="sp"></span>
+  <button class="iconbtn" type="button" data-theme-toggle data-value="auto" aria-label="Тема: авто. Переключить">
+    <svg class="i" data-icon="auto" aria-hidden="true"><use href="#i-half"/></svg>
+    <svg class="i" data-icon="light" aria-hidden="true" hidden><use href="#i-sun"/></svg>
+    <svg class="i" data-icon="dark" aria-hidden="true" hidden><use href="#i-moon"/></svg>
+  </button>
+</header>
+
+<main class="out gut">
+  <div class="card">
+
+    <!-- Вход -->
+    <section id="view-login" hidden>
+      <form id="login-form" class="col" autocomplete="on" novalidate>
+        <div>
+          <h1>Вход</h1>
+          <p class="lead">Пароль не покидает это устройство. На сервер уходит только ключ, выведенный из него.</p>
+        </div>
+        <div class="field">
+          <div class="row"><label for="login-name">Логин</label></div>
+          <input id="login-name" name="username" autocomplete="username" required
+            spellcheck="false" autocapitalize="off" maxlength="32">
+        </div>
+        <div class="field">
+          <div class="row"><label for="login-password">Пароль</label><span class="meta" data-count></span></div>
+          <input id="login-password" type="password" name="password" autocomplete="current-password" required maxlength="256" data-meter>
+          <div class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          <span class="hint" data-hint hidden></span>
+        </div>
+        <div class="bottom">
+          <button class="btn L primary" type="submit" data-busy="Проверяем пароль…">Войти</button>
+          <p class="cap foot" data-busy-cap hidden>Ключ вычисляется на устройстве</p>
+          <p class="small foot">Нет аккаунта? <button type="button" class="linkbtn" data-go="register">Регистрация по приглашению</button></p>
+          <p class="foot"><button type="button" class="linkbtn" data-go="recover">Забыли пароль?</button></p>
+        </div>
+      </form>
+    </section>
+
+    <!-- Регистрация, шаг 1 -->
+    <section id="view-register" hidden>
+      <form id="register-form" class="col" autocomplete="on" novalidate>
+        <div>
+          <p class="step">Шаг 1 из 2</p>
+          <h1>Новый аккаунт</h1>
+          <p class="lead">Пароль не покидает устройство. Если забудете пароль и потеряете код восстановления, данные не вернуть.</p>
+        </div>
+        <div class="field" id="reg-invite-field">
+          <div class="row"><label for="reg-invite">Код приглашения</label></div>
+          <input id="reg-invite" class="mono" spellcheck="false" autocapitalize="off" autocomplete="off" maxlength="64">
+        </div>
+        <p class="cap" id="reg-invite-note" hidden>Приглашение из ссылки принято.</p>
+        <div class="field">
+          <div class="row"><label for="reg-name">Логин</label><span class="meta">латиница, цифры, . _ -</span></div>
+          <input id="reg-name" name="username" autocomplete="username" required
+            spellcheck="false" autocapitalize="off" maxlength="32">
+        </div>
+
+        <div class="field" id="reg-phrase-box">
+          <div class="row"><label for="reg-phrase">Пароль-фраза</label><span class="meta" id="reg-phrase-meta"></span></div>
+          <div class="phrase">
+            <textarea id="reg-phrase" rows="2" readonly spellcheck="false" autocomplete="off"></textarea>
+            <div class="acts">
+              <button type="button" class="btn secondary" id="reg-regen">Другая фраза</button>
+              <button type="button" class="btn secondary" id="reg-copy"><span>Скопировать</span></button>
+            </div>
+          </div>
+          <span class="hint">Запишите фразу или сохраните в менеджере паролей. Свой пароль тоже можно: от 15 символов, популярные и утёкшие не примем.</span>
+          <button type="button" class="linkbtn" id="reg-own">Ввести свой пароль</button>
+        </div>
+
+        <div id="reg-own-box" class="col" hidden>
+          <div class="field">
+            <div class="row"><label for="reg-password">Пароль</label><span class="meta" data-count></span></div>
+            <input id="reg-password" type="password" name="new-password" autocomplete="new-password" maxlength="256" data-meter disabled>
+            <div class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="field">
+            <div class="row"><label for="reg-password2">Пароль ещё раз</label></div>
+            <input id="reg-password2" type="password" autocomplete="new-password" maxlength="256" disabled>
+          </div>
+          <label class="check"><input type="checkbox" id="reg-show"> Показать пароль</label>
+          <button type="button" class="linkbtn" id="reg-use-phrase">Взять сгенерированную фразу</button>
+        </div>
+
+        <div class="bottom">
+          <button class="btn L primary" type="submit" data-busy="Создаём ключи…">Создать аккаунт</button>
+          <p class="cap foot">Ключ вычисляется на устройстве, это 1–3 секунды.</p>
+          <p class="foot"><button type="button" class="linkbtn" data-go="login">Уже есть аккаунт</button></p>
+        </div>
+      </form>
+    </section>
+
+    <!-- Код восстановления (шаг 2 регистрации, а также после восстановления) -->
+    <section id="view-code" hidden>
+      <div class="col">
+        <div>
+          <p class="step" id="code-step">Шаг 2 из 2</p>
+          <h1>Код восстановления</h1>
+          <p class="lead">Единственный способ вернуть доступ, если забудете пароль. Мы восстановить не сможем: у нас нет ваших ключей. Показываем один раз.</p>
+        </div>
+        <div class="codegrid" id="code-value" aria-label="Код восстановления"></div>
+        <div class="acts">
+          <button type="button" class="btn secondary" id="code-copy"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span>Скопировать</span></button>
+          <button type="button" class="btn secondary" id="code-save"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg><span>Сохранить файлом</span></button>
+        </div>
+        <p class="small">Храните офлайн: на бумаге или в менеджере паролей. Не пересылайте в мессенджеры и почту.</p>
+        <div class="bottom">
+          <label class="check"><input type="checkbox" id="code-saved"> Я сохранил код в надёжном месте</label>
+          <button type="button" class="btn L primary" id="code-done" disabled>Продолжить</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Восстановление -->
+    <section id="view-recover" hidden>
+      <form id="recover-form" class="col" autocomplete="on" novalidate>
+        <div>
+          <h1>Восстановление</h1>
+          <p class="lead">Нужен код восстановления. После смены пароля выдадим новый код, старый перестанет работать, все сессии завершатся.</p>
+        </div>
+        <div class="field">
+          <div class="row"><label for="rec-name">Логин</label></div>
+          <input id="rec-name" name="username" autocomplete="username" required
+            spellcheck="false" autocapitalize="off" maxlength="32">
+        </div>
+        <div class="field">
+          <div class="row"><label for="rec-code">Код восстановления</label><span class="meta">64 символа, дефисы можно</span></div>
+          <input id="rec-code" class="mono" required spellcheck="false" autocapitalize="off" autocomplete="off" maxlength="128">
+        </div>
+        <div class="field">
+          <div class="row"><label for="rec-password">Новый пароль</label><span class="meta" data-count></span></div>
+          <input id="rec-password" type="password" autocomplete="new-password" required maxlength="256" data-meter>
+          <div class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="field">
+          <div class="row"><label for="rec-password2">Новый пароль ещё раз</label></div>
+          <input id="rec-password2" type="password" autocomplete="new-password" required maxlength="256">
+        </div>
+        <button type="button" class="linkbtn" id="rec-generate">Сгенерировать фразу</button>
+        <div class="bottom">
+          <button class="btn L primary" type="submit" data-busy="Проверяем код…">Сменить пароль</button>
+          <p class="cap foot" data-busy-cap hidden>Ключ вычисляется на устройстве</p>
+          <p class="foot"><button type="button" class="linkbtn" data-go="login">Назад ко входу</button></p>
+        </div>
+      </form>
+    </section>
+
+    <p class="msg" id="status" role="status" hidden></p>
+    <p class="msg error" id="error" role="alert" hidden></p>
+  </div>
+</main>
+
+<!-- ================= signed in ================= -->
+
+<div class="app">
+  <nav class="nav" aria-label="Разделы">
+    <span class="navbrand brand">
+      <svg class="mark" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect class="mk-bg" width="24" height="24" rx="5"/><path class="mk-arm" d="M6.5 17.5L16 8" stroke-width="2.2" stroke-linecap="round"/><rect class="mk-weight" x="14.5" y="14.5" width="4.5" height="4.5"/></svg>
+      <span class="navlabel">Trebuchet</span>
+    </span>
+    <a href="https://note.rima.su/"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Note</a>
+    <span class="navitem" aria-current="page"><svg class="i" aria-hidden="true"><use href="#i-settings"/></svg>Настройки</span>
+    <div class="who">
+      <span class="av" id="who-av" aria-hidden="true"></span>
+      <span>
+        <span class="n" id="who-login"></span>
+        <span class="meta" id="who-fp"></span>
+      </span>
+    </div>
+  </nav>
+
+  <div class="content gut">
+    <section class="page" id="view-account" hidden>
+      <h1>Настройки</h1>
+
+      <p class="group-label">Внешний вид</p>
+      <div class="group">
+        <div class="rowi block">
+          <span>Тема</span>
+          <div class="seg" role="group" aria-label="Тема">
+            <button type="button" data-theme-choice="auto" aria-pressed="true"><svg class="i" aria-hidden="true"><use href="#i-half"/></svg>Авто</button>
+            <button type="button" data-theme-choice="light" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-sun"/></svg>Светлая</button>
+            <button type="button" data-theme-choice="dark" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-moon"/></svg>Тёмная</button>
+          </div>
+          <span class="cap">«Авто» следует настройке системы. Выбор хранится только на этом устройстве.</span>
+        </div>
+      </div>
+
+      <p class="group-label">Безопасность</p>
+      <div class="group">
+        <details class="rowd">
+          <summary><span class="k"><svg class="i" aria-hidden="true"><use href="#i-key"/></svg>Сменить пароль</span><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></summary>
+          <div class="body">
+            <form id="password-form" class="col" novalidate>
+              <input type="text" name="username" autocomplete="username" hidden id="pw-username">
+              <div class="field">
+                <div class="row"><label for="pw-current">Текущий пароль</label></div>
+                <input id="pw-current" type="password" autocomplete="current-password" required maxlength="256">
+              </div>
+              <div class="field">
+                <div class="row"><label for="pw-new">Новый пароль</label><span class="meta" data-count></span></div>
+                <input id="pw-new" type="password" autocomplete="new-password" required maxlength="256" data-meter>
+                <div class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+              </div>
+              <div class="field">
+                <div class="row"><label for="pw-new2">Новый пароль ещё раз</label></div>
+                <input id="pw-new2" type="password" autocomplete="new-password" required maxlength="256">
+              </div>
+              <button type="button" class="linkbtn" id="pw-generate">Сгенерировать фразу</button>
+              <button class="btn primary" type="submit" data-busy="Проверяем пароль…">Сменить пароль</button>
+              <p class="cap" data-busy-cap hidden>Ключ вычисляется на устройстве</p>
+            </form>
+          </div>
+        </details>
+        <div class="rowi">
+          <span class="k"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Ключи на этом устройстве</span>
+          <span class="v" id="acc-keys"></span>
+        </div>
+      </div>
+
+      <p class="group-label">Аккаунт</p>
+      <div class="group">
+        <div class="rowi">
+          <span class="k"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg>Логин</span>
+          <span class="v" id="acc-login"></span>
+        </div>
+        <div class="rowi">
+          <span class="k"><svg class="i" aria-hidden="true"><use href="#i-finger"/></svg>Отпечаток ключа</span>
+          <span class="v" id="acc-fp"></span>
+        </div>
+        <details class="rowd" id="acc-invite-box" hidden>
+          <summary><span class="k"><svg class="i" aria-hidden="true"><use href="#i-userplus"/></svg>Пригласить человека</span><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></summary>
+          <div class="body">
+            <button type="button" class="btn secondary" id="acc-invite">Создать приглашение</button>
+            <div class="field" id="acc-invite-out" hidden>
+              <input id="acc-invite-link" class="mono" readonly spellcheck="false" aria-label="Ссылка-приглашение">
+              <span class="hint" id="acc-invite-exp"></span>
+              <button type="button" class="btn secondary" id="acc-invite-copy"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span>Скопировать</span></button>
+            </div>
+          </div>
+        </details>
+        <details class="rowd danger">
+          <summary><span class="k"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg>Удалить аккаунт</span><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></summary>
+          <div class="body">
+            <form id="delete-form" class="col" novalidate>
+              <p class="small">Аккаунт и ключи будут удалены безвозвратно. Восстановить их не сможем ни мы, ни вы.</p>
+              <div class="field">
+                <div class="row"><label for="del-password">Пароль</label></div>
+                <input id="del-password" type="password" autocomplete="current-password" required maxlength="256">
+              </div>
+              <button class="btn danger" type="submit" data-busy="Проверяем пароль…">Удалить навсегда</button>
+            </form>
+          </div>
+        </details>
+      </div>
+      <p class="cap">Отпечаток нужен, чтобы друзья убедились, что делятся именно с вами. Сверяйте его лично или по видеосвязи.</p>
+
+      <p class="msg" id="acc-status" role="status" hidden></p>
+      <p class="msg error" id="acc-error" role="alert" hidden></p>
+
+      <button type="button" class="btn L danger logout" id="acc-logout">Выйти</button>
+    </section>
+  </div>
+</div>
+</body>
+</html>
+{{end}}

@@ -8,7 +8,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"path"
 	"time"
@@ -29,7 +31,8 @@ type Server struct {
 	blobs     *blobs.Store // used by object uploads in the next stage
 	authLimit *ratelimit.Limiter
 	apiLimit  *ratelimit.Limiter
-	page      []byte
+	page      *template.Template // html/template: contextual escaping on every render
+	pageData  map[string]string
 	static    map[string]staticFile
 }
 
@@ -104,8 +107,9 @@ func sri(b []byte) string {
 	return "sha384-" + base64.StdEncoding.EncodeToString(sum[:])
 }
 
-// renderPage renders the single HTML page once, with Subresource Integrity
-// hashes for the script, the stylesheet and the data files the script fetches.
+// renderPage prepares the single HTML page with Subresource Integrity hashes for
+// the script, the stylesheet and the data files the script fetches. It is rendered
+// once here so that a broken template fails the start instead of the first request.
 func (s *Server) renderPage() error {
 	tpl, err := template.ParseFS(web.Templates, "templates/app.html")
 	if err != nil {
@@ -118,11 +122,10 @@ func (s *Server) renderPage() error {
 		"WordsIntegrity":     sri(s.static["words.txt"].body),
 		"BlocklistIntegrity": sri(s.static["blocklist.txt"].body),
 	}
-	var buf bytes.Buffer
-	if err := tpl.ExecuteTemplate(&buf, "app.html", data); err != nil {
+	if err := tpl.ExecuteTemplate(io.Discard, "app.html", data); err != nil {
 		return err
 	}
-	s.page = buf.Bytes()
+	s.page, s.pageData = tpl, data
 	return nil
 }
 
@@ -131,7 +134,9 @@ func (s *Server) Handler() http.Handler {
 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write(s.page)
+		if err := s.page.ExecuteTemplate(w, "app.html", s.pageData); err != nil {
+			slog.Error("render page failed", "err", err)
+		}
 	})
 	mux.HandleFunc("GET /static/{name}", s.handleStatic)
 	mux.HandleFunc("GET /static/fonts/{name}", s.handleStatic)

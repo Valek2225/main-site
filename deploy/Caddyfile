@@ -37,3 +37,14 @@ note.rima.su {
 	# (no trusted_proxies configured), so the app can rely on it.
 	reverse_proxy note:8080
 }
+
+app.rima.su {
+	import hardening
+
+	# No response compression: avoids BREACH-style length leaks.
+	request_body {
+		max_size 64KB
+	}
+
+	reverse_proxy vault:8080
+}

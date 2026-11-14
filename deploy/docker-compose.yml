@@ -43,6 +43,8 @@ services:
     depends_on:
       note:
         condition: service_healthy
+      vault:
+        condition: service_healthy
 
   note:
     <<: *hardening
@@ -53,6 +55,25 @@ services:
       NOTE_MAX_MB: "256"
     mem_limit: 512m
     memswap_limit: 512m # no swap: notes must never touch the disk
+    pids_limit: 100
+    networks: [internal]
+
+  vault:
+    <<: *hardening
+    image: ${VAULT_IMAGE:-trebuchet/vault:local}
+    build: ../services/vault
+    # Optional VAULT_BOOTSTRAP_HASH: SHA-256 of the one-time code for the first
+    # admin (`vault bootstrap-code`). Not a secret: the code never reaches the server.
+    env_file:
+      - path: /etc/trebuchet/vault.env
+        required: false
+    # Host directories must exist, be owned by the container user (65532,
+    # shifted by userns-remap) and have mode 0700; otherwise the service refuses to start.
+    volumes:
+      - ${TREBUCHET_DATA:-/srv/trebuchet/data}/vault:/data
+      - ${TREBUCHET_DATA:-/srv/trebuchet/data}/snapshots:/snapshots
+    mem_limit: 256m
+    memswap_limit: 256m # no swap: session keys must never touch the disk
     pids_limit: 100
     networks: [internal]
 

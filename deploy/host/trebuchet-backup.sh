@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# rima-backup: encrypted off-site backups.
+# trebuchet-backup: encrypted off-site backups.
 #
-#   rima-backup run        snapshot -> tar -> pad -> age (public key only) -> S3
-#   rima-backup self-test  check that the S3 key can write but can NOT delete or read
+#   trebuchet-backup run        snapshot -> tar -> pad -> age (public key only) -> S3
+#   trebuchet-backup self-test  check that the S3 key can write but can NOT delete or read
 #
 # Properties:
 #   - encrypted with age to recipients whose PRIVATE keys are offline: this server can
@@ -13,22 +13,22 @@
 #   - the bucket must have Object Lock default retention (compliance mode) and the key
 #     must be write-only; `self-test` verifies the key part.
 #
-# Config: /etc/rima/backup.env (see backup.env.example). Requires: tar, age, rclone.
+# Config: /etc/trebuchet/backup.env (see backup.env.example). Requires: tar, age, rclone.
 set -euo pipefail
 umask 077
 
-CONFIG="${RIMA_BACKUP_CONFIG:-/etc/rima/backup.env}"
-[ "$(stat -c '%u %a' "$CONFIG")" = "0 600" ] || { echo "rima-backup: $CONFIG must be owned by root with mode 600" >&2; exit 1; }
+CONFIG="${TREBUCHET_BACKUP_CONFIG:-/etc/trebuchet/backup.env}"
+[ "$(stat -c '%u %a' "$CONFIG")" = "0 600" ] || { echo "trebuchet-backup: $CONFIG must be owned by root with mode 600" >&2; exit 1; }
 # shellcheck source=/dev/null
 . "$CONFIG"
 
 : "${BACKUP_S3_ENDPOINT:?}" "${BACKUP_S3_BUCKET:?}" "${BACKUP_S3_REGION:?}"
 : "${BACKUP_S3_ACCESS_KEY_ID:?}" "${BACKUP_S3_SECRET_ACCESS_KEY:?}"
-: "${BACKUP_AGE_RECIPIENTS_FILE:=/etc/rima/backup-recipients.txt}"
-: "${BACKUP_SOURCE:=/srv/rima/data/snapshots}"
-: "${BACKUP_PREFIX:=rima/}"
+: "${BACKUP_AGE_RECIPIENTS_FILE:=/etc/trebuchet/backup-recipients.txt}"
+: "${BACKUP_SOURCE:=/srv/trebuchet/data/snapshots}"
+: "${BACKUP_PREFIX:=trebuchet/}"
 
-log() { echo "rima-backup: $*"; }
+log() { echo "trebuchet-backup: $*"; }
 die() { log "ERROR: $*"; exit 1; }
 
 [ -s "$BACKUP_AGE_RECIPIENTS_FILE" ] || die "no age recipients in $BACKUP_AGE_RECIPIENTS_FILE"
@@ -38,18 +38,18 @@ fi
 
 # rclone is configured only through the environment: no config file with secrets on disk.
 export RCLONE_CONFIG=/dev/null
-export RCLONE_CONFIG_RIMABK_TYPE=s3
-export RCLONE_CONFIG_RIMABK_PROVIDER=Other
-export RCLONE_CONFIG_RIMABK_ENDPOINT="$BACKUP_S3_ENDPOINT"
-export RCLONE_CONFIG_RIMABK_REGION="$BACKUP_S3_REGION"
-export RCLONE_CONFIG_RIMABK_ACCESS_KEY_ID="$BACKUP_S3_ACCESS_KEY_ID"
-export RCLONE_CONFIG_RIMABK_SECRET_ACCESS_KEY="$BACKUP_S3_SECRET_ACCESS_KEY"
-export RCLONE_CONFIG_RIMABK_NO_CHECK_BUCKET=true
+export RCLONE_CONFIG_TREBUCHETBK_TYPE=s3
+export RCLONE_CONFIG_TREBUCHETBK_PROVIDER=Other
+export RCLONE_CONFIG_TREBUCHETBK_ENDPOINT="$BACKUP_S3_ENDPOINT"
+export RCLONE_CONFIG_TREBUCHETBK_REGION="$BACKUP_S3_REGION"
+export RCLONE_CONFIG_TREBUCHETBK_ACCESS_KEY_ID="$BACKUP_S3_ACCESS_KEY_ID"
+export RCLONE_CONFIG_TREBUCHETBK_SECRET_ACCESS_KEY="$BACKUP_S3_SECRET_ACCESS_KEY"
+export RCLONE_CONFIG_TREBUCHETBK_NO_CHECK_BUCKET=true
 unset BACKUP_S3_SECRET_ACCESS_KEY
-remote="rimabk:${BACKUP_S3_BUCKET}/${BACKUP_PREFIX}"
+remote="trebuchetbk:${BACKUP_S3_BUCKET}/${BACKUP_PREFIX}"
 RC=(rclone --s3-no-head --retries 3 --low-level-retries 5 --stats 0)
 
-work="$(mktemp -d /run/rima-backup.XXXXXX)"
+work="$(mktemp -d /run/trebuchet-backup.XXXXXX)"
 trap 'rm -rf "$work"' EXIT
 
 rand() { od -An -N8 -tx1 /dev/urandom | tr -d ' \n'; }
@@ -95,5 +95,5 @@ cmd_self_test() {
 case "${1:-}" in
   run) cmd_run ;;
   self-test) cmd_self_test ;;
-  *) echo "usage: rima-backup run|self-test" >&2; exit 2 ;;
+  *) echo "usage: trebuchet-backup run|self-test" >&2; exit 2 ;;
 esac

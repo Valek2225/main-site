@@ -1,5 +1,5 @@
 [Unit]
-Description=Check for a new signed rima.su release every minute
+Description=Check for a new signed Trebuchet release every minute
 
 [Timer]
 OnBootSec=2min

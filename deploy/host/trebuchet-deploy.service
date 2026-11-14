@@ -1,18 +1,18 @@
 [Unit]
-Description=rima.su pull-based deployer (verify signatures, deploy changed services)
+Description=Trebuchet pull-based deployer (verify signatures, deploy changed services)
 After=network-online.target docker.service
 Wants=network-online.target
 Requires=docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/rima-deploy
+ExecStart=/usr/local/sbin/trebuchet-deploy
 # cosign keeps its Sigstore trust root (TUF) cache under $HOME
-Environment=HOME=/var/lib/rima-deploy
-Environment=DOCKER_CONFIG=/var/lib/rima-deploy/docker
+Environment=HOME=/var/lib/trebuchet-deploy
+Environment=DOCKER_CONFIG=/var/lib/trebuchet-deploy/docker
 # The deployer needs docker (root-equivalent); keep the rest of the system out of reach.
 ProtectSystem=strict
-ReadWritePaths=/opt/rima /var/lib/rima-deploy /run
+ReadWritePaths=/opt/trebuchet /var/lib/trebuchet-deploy /run
 ProtectHome=true
 PrivateTmp=true
 NoNewPrivileges=true

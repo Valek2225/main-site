@@ -1,5 +1,5 @@
 [Unit]
-Description=Daily encrypted rima.su backup
+Description=Daily encrypted Trebuchet backup
 
 [Timer]
 OnCalendar=*-*-* 03:30:00 UTC

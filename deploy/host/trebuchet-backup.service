@@ -1,15 +1,15 @@
 [Unit]
-Description=rima.su encrypted off-site backup (age -> S3 with Object Lock)
+Description=Trebuchet encrypted off-site backup (age -> S3 with Object Lock)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/rima-backup run
-Environment=HOME=/var/lib/rima-backup
-StateDirectory=rima-backup
+ExecStart=/usr/local/sbin/trebuchet-backup run
+Environment=HOME=/var/lib/trebuchet-backup
+StateDirectory=trebuchet-backup
 ProtectSystem=strict
-ReadOnlyPaths=/srv/rima/data /etc/rima
+ReadOnlyPaths=/srv/trebuchet/data /etc/trebuchet
 ReadWritePaths=/run
 ProtectHome=true
 PrivateTmp=true

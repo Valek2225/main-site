@@ -1,0 +1,4 @@
+# Installed with: pip install --require-hashes --only-binary :all: -r this-file
+# zizmor is a single Rust binary wheel without Python dependencies.
+# Released 2026-11-02 (older than 7 days when pinned).
+zizmor==1.32.0 --hash=sha256:84a6acb975accc13408786a2bd274b572537ca19c933ebbc13e78f3988562071

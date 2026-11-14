@@ -1,0 +1,120 @@
+:root {
+  --bg: #f6f6f4;
+  --fg: #1c1c1a;
+  --dim: #6b6b66;
+  --card: #ffffff;
+  --border: #dcdcd6;
+  --accent: #2f6f4f;
+  --accent-fg: #ffffff;
+  --error: #b42318;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151514;
+    --fg: #ececea;
+    --dim: #9a9a94;
+    --card: #1f1f1d;
+    --border: #34342f;
+    --accent: #5fb88a;
+    --accent-fg: #0d1a13;
+    --error: #ff8a80;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+main {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 48px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+h1 { margin: 0; font-size: 28px; letter-spacing: -0.02em; }
+.lead { margin: 8px 0 0; }
+.dim { color: var(--dim); }
+.small { font-size: 14px; }
+p { margin: 0 0 8px; }
+
+form, section { display: flex; flex-direction: column; gap: 12px; }
+[hidden] { display: none !important; }
+
+textarea, input, select {
+  font: inherit;
+  color: var(--fg);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  width: 100%;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 200px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 15px;
+}
+
+select { width: auto; padding: 6px 8px; }
+
+textarea:focus, input:focus, select:focus, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.row input { flex: 1 1 260px; }
+
+.ttl { font-size: 14px; color: var(--dim); }
+
+button {
+  font: inherit;
+  font-weight: 600;
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 18px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: progress; }
+button.secondary {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--border);
+  align-self: flex-start;
+}
+
+#counter.over { color: var(--error); }
+
+.error { color: var(--error); }
+
+a { color: var(--accent); }
+
+footer { margin-top: 12px; }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

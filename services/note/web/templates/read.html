@@ -1,0 +1,40 @@
+{{define "read.html"}}<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>note · rima.su</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/note.css" integrity="{{.CSSIntegrity}}">
+<script src="/static/note.js" integrity="{{.JSIntegrity}}" defer></script>
+</head>
+<body data-page="read">
+<main>
+  <header>
+    <h1>note<span class="dim">.rima.su</span></h1>
+  </header>
+
+  <section id="intro">
+    <p>Вам прислали одноразовое сообщение.</p>
+    <p class="dim">После открытия оно будет удалено с сервера навсегда. Открывайте, когда будете готовы его сохранить.</p>
+    <button id="reveal" type="button">Показать сообщение</button>
+  </section>
+
+  <section id="result" hidden>
+    <label for="message" class="sr-only">Сообщение</label>
+    <textarea id="message" rows="10" readonly spellcheck="false"></textarea>
+    <div class="row">
+      <span class="dim small">Сообщение уже удалено с сервера. После закрытия страницы его не вернуть.</span>
+      <button id="copy" type="button">Копировать</button>
+    </div>
+  </section>
+
+  <p id="error" class="error" role="alert" hidden></p>
+
+  <footer class="dim small"><a href="/">Создать своё сообщение</a></footer>
+</main>
+</body>
+</html>
+{{end}}

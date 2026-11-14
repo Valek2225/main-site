@@ -1,0 +1,22 @@
+[Unit]
+Description=rima.su encrypted off-site backup (age -> S3 with Object Lock)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/rima-backup run
+Environment=HOME=/var/lib/rima-backup
+StateDirectory=rima-backup
+ProtectSystem=strict
+ReadOnlyPaths=/srv/rima/data /etc/rima
+ReadWritePaths=/run
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=CAP_DAC_READ_SEARCH

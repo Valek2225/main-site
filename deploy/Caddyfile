@@ -1,0 +1,39 @@
+{
+	# No admin API: config changes only through a restart, nothing to attack on :2019.
+	admin off
+
+	servers {
+		protocols h1 h2 h3
+	}
+}
+
+(hardening) {
+	header {
+		-Server
+		-Via
+	}
+}
+
+rima.su, www.rima.su {
+	import hardening
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		Content-Security-Policy "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+	}
+	respond "rima.su" 200
+}
+
+note.rima.su {
+	import hardening
+
+	# No response compression: avoids BREACH-style length leaks.
+	request_body {
+		max_size 128KB
+	}
+
+	# Caddy overwrites X-Forwarded-For with the real client IP
+	# (no trusted_proxies configured), so the app can rely on it.
+	reverse_proxy note:8080
+}

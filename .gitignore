@@ -1,0 +1,46 @@
+# Секреты — никогда не коммитим
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa*
+id_ed25519*
+secrets/
+*.secret
+
+# Сборка
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+coverage.*
+
+# Зависимости
+node_modules/
+vendor/
+
+# Данные и дампы
+*.rdb
+*.aof
+*.sqlite
+*.db
+*.log
+dump/
+
+# Редакторы и ОС
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Локальные файлы, в git не попадают
+/CLAUDE.md
+/.claude/
+/docs/
+/deploy/README.md

@@ -1,0 +1,56 @@
+{{define "create.html"}}<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>note · rima.su</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/note.css" integrity="{{.CSSIntegrity}}">
+<script src="/static/note.js" integrity="{{.JSIntegrity}}" defer></script>
+</head>
+<body data-page="create">
+<main>
+  <header>
+    <h1>note<span class="dim">.rima.su</span></h1>
+    <p class="lead">Одноразовое зашифрованное сообщение. Его можно открыть один раз, после этого оно удаляется навсегда.</p>
+  </header>
+
+  <form id="create-form" autocomplete="off">
+    <label for="text" class="sr-only">Сообщение</label>
+    <textarea id="text" rows="10" placeholder="Текст сообщения…" required
+      spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"
+      data-gramm="false" data-1p-ignore data-lpignore="true"></textarea>
+    <div class="row">
+      <span id="counter" class="dim"></span>
+      <label class="ttl">Удалить, если не открыли, через
+        <select id="ttl">
+          <option value="3600">1 час</option>
+          <option value="86400" selected>1 день</option>
+          <option value="604800">7 дней</option>
+        </select>
+      </label>
+    </div>
+    <button id="submit" type="submit">Создать ссылку</button>
+  </form>
+
+  <section id="result" hidden>
+    <p>Ссылка готова. Её можно открыть <b>только один раз</b>.</p>
+    <div class="row">
+      <input id="link" type="text" readonly spellcheck="false" aria-label="Ссылка на сообщение">
+      <button id="copy" type="button">Копировать</button>
+    </div>
+    <p class="dim small">Ключ расшифровки находится в ссылке после символа #. Он не уходит на сервер, поэтому сервер не может прочитать сообщение. Кто получит ссылку целиком, тот и прочтёт сообщение, так что отправляйте её по надёжному каналу.</p>
+    <button id="again" type="button" class="secondary">Создать ещё одно</button>
+  </section>
+
+  <p id="error" class="error" role="alert" hidden></p>
+
+  <footer class="dim small">
+    Шифрование AES-256-GCM в вашем браузере. Сервер хранит только зашифрованные данные и только в оперативной памяти.
+  </footer>
+</main>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,23 @@
+# osv-scanner exceptions for the Caddy build module ONLY (applies to this directory).
+# Every entry needs an owner decision and an expiry date:
+# after ignoreUntil the check fails again and the exception must be re-reviewed.
+
+# go-jose/v3 (no fixed v3 release). Pulled in only by caddypki -> smallstep/certificates
+# (Caddy's internal CA: `tls internal`, `acme_server`). Our Caddyfile uses neither;
+# certificates come from Let's Encrypt, so untrusted JWKs never reach go-jose.
+# Owner decision 2026-11-14.
+
+[[IgnoredVulns]]
+id = "GHSA-mgcc-cww5-fp2q" # CVE-2026-116587, DoS when parsing JWKs with RSA keys (7.5)
+ignoreUntil = 2026-12-14T00:00:00Z
+reason = "go-jose/v3 via caddypki only; internal CA/acme_server not configured; no fixed v3 release"
+
+[[IgnoredVulns]]
+id = "GHSA-4w3g-jfj2-cw2q" # CVE-2026-116585, panic during CBC-HMAC processing (6.9)
+ignoreUntil = 2026-12-14T00:00:00Z
+reason = "go-jose/v3 via caddypki only; internal CA/acme_server not configured; no fixed v3 release"
+
+[[IgnoredVulns]]
+id = "GHSA-vvm8-gf78-28g4" # CVE-2026-116586, panics in JSON parsing (6.9)
+ignoreUntil = 2026-12-14T00:00:00Z
+reason = "go-jose/v3 via caddypki only; internal CA/acme_server not configured; no fixed v3 release"

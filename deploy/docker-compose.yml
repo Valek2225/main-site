@@ -1,0 +1,66 @@
+name: rima
+
+# Every service is a separate container and image: deploying one never restarts
+# the others. In production the deployer writes
+# exact image digests into deploy/images.env; locally the services are built.
+
+# Hardening for every container.
+x-hardening: &hardening
+  restart: unless-stopped
+  read_only: true
+  user: "65532:65532"
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: local
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  caddy:
+    <<: *hardening
+    image: ${CADDY_IMAGE:-rima/caddy:local}
+    build: ./caddy
+    # No capabilities at all: low ports are allowed for unprivileged users
+    # inside this network namespace only.
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid,nodev,uid=65532,gid=65532
+    mem_limit: 256m
+    pids_limit: 200
+    networks: [edge, internal]
+    depends_on:
+      note:
+        condition: service_healthy
+
+  note:
+    <<: *hardening
+    image: ${NOTE_IMAGE:-rima/note:local}
+    build: ../services/note
+    environment:
+      NOTE_MAX_NOTES: "100000"
+      NOTE_MAX_MB: "256"
+    mem_limit: 512m
+    memswap_limit: 512m # no swap: notes must never touch the disk
+    pids_limit: 100
+    networks: [internal]
+
+networks:
+  edge: {}
+  internal:
+    internal: true # no route to the internet
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}

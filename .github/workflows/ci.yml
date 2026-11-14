@@ -1,0 +1,253 @@
+# CI for rima.su.
+#
+# Supply-chain rules applied here:
+#   - every action is pinned by full commit SHA (tags can be force-pushed: see the
+#     March 2026 trivy-action incident, CVE-2026-33634);
+#   - Go tools are installed with `go install pkg@version`: the Go module proxy and
+#     checksum database make a published version immutable even if a tag is rewritten;
+#   - Python tools are installed with pip --require-hashes;
+#   - container tools are pinned by image digest;
+#   - GITHUB_TOKEN has no permissions by default, each job gets only what it needs;
+#   - no Go build cache (cache poisoning).
+# Versions are at least 7 days old when pinned.
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GOFLAGS: -mod=readonly
+  GOTOOLCHAIN: local
+  # Pinned tool versions
+  STATICCHECK_VERSION: v0.8.2
+  GOVULNCHECK_VERSION: v1.9.0
+  GOSEC_VERSION: v2.30.0
+  OSV_SCANNER_VERSION: v2.7.0
+  GITLEAKS_VERSION: v8.30.1
+  TRIVY_VERSION: v0.76.2
+  SEMGREP_IMAGE: semgrep/semgrep:1.184.0@sha256:cc1b68266f267878b39739373ea9985b9a78e5d64497dd875c8de100b22695ed
+
+jobs:
+  go-checks:
+    name: Go checks (vet, staticcheck, race, fuzz, govulncheck, gosec, osv, gitleaks)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # gitleaks scans the whole history
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: services/note/go.mod
+          cache: false
+
+      - name: Install pinned tools
+        run: |
+          set -euo pipefail
+          export GOBIN="$RUNNER_TEMP/bin"
+          echo "$GOBIN" >> "$GITHUB_PATH"
+          go install "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}"
+          go install "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
+          go install "github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION}"
+          go install "github.com/google/osv-scanner/v2/cmd/osv-scanner@${OSV_SCANNER_VERSION}"
+          go install "github.com/zricethezav/gitleaks/v8@${GITLEAKS_VERSION}"
+
+      - name: Run scripts/check.sh
+        env:
+          REQUIRE_RACE: "1"
+          FUZZ_TIME: "30s"
+        run: scripts/check.sh
+
+  static-analysis:
+    name: Semgrep, zizmor, trivy config
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: services/note/go.mod
+          cache: false
+
+      - name: Semgrep (SAST)
+        run: |
+          docker run --rm --network=bridge -v "$PWD:/src:ro" -w /src "$SEMGREP_IMAGE" \
+            semgrep scan --config p/default --config p/owasp-top-ten \
+            --metrics=off --error --disable-version-check
+
+      - name: zizmor (GitHub Actions security)
+        run: |
+          python3 -m venv "$RUNNER_TEMP/zizmor"
+          "$RUNNER_TEMP/zizmor/bin/pip" install --require-hashes --only-binary :all: \
+            -r .github/requirements/zizmor.txt
+          "$RUNNER_TEMP/zizmor/bin/zizmor" --persona=auditor --min-severity=medium .github/workflows
+
+      - name: trivy config (Dockerfiles, compose)
+        run: |
+          set -euo pipefail
+          GOBIN="$RUNNER_TEMP/bin" go install "github.com/aquasecurity/trivy/cmd/trivy@${TRIVY_VERSION}"
+          "$RUNNER_TEMP/bin/trivy" config --exit-code 1 --severity HIGH,CRITICAL .
+
+  images:
+    name: Build, test and scan images
+    needs: [go-checks, static-analysis]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: services/note/go.mod
+          cache: false
+
+      - name: Install trivy
+        run: GOBIN="$RUNNER_TEMP/bin" go install "github.com/aquasecurity/trivy/cmd/trivy@${TRIVY_VERSION}"
+
+      - name: Build images
+        run: |
+          set -euo pipefail
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          docker build -t rima/note:ci services/note
+          docker build -t rima/caddy:ci deploy/caddy
+
+      - name: Test Caddy runs as uid 65532 with no capabilities
+        run: |
+          set -euo pipefail
+          printf ':80 {\n  respond "ok" 200\n}\n' > "$RUNNER_TEMP/Caddyfile"
+          docker run -d --name caddy-test --read-only --user 65532:65532 \
+            --cap-drop ALL --security-opt no-new-privileges:true \
+            --sysctl net.ipv4.ip_unprivileged_port_start=0 \
+            --tmpfs /tmp:uid=65532,gid=65532 \
+            -v "$RUNNER_TEMP/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -p 127.0.0.1:18080:80 rima/caddy:ci
+          ok=0
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:18080/ | grep -q ok; then ok=1; break; fi
+            sleep 1
+          done
+          docker logs caddy-test
+          test "$ok" = "1"
+          test "$(docker inspect -f '{{.Config.User}}' caddy-test)" = "65532:65532"
+          docker rm -f caddy-test
+
+      - name: Test note runs hardened and passes its healthcheck
+        run: |
+          set -euo pipefail
+          docker run -d --name note-test --read-only --cap-drop ALL \
+            --security-opt no-new-privileges:true -p 127.0.0.1:18081:8080 rima/note:ci
+          ok=0
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:18081/healthz | grep -q ok; then ok=1; break; fi
+            sleep 1
+          done
+          test "$ok" = "1"
+          curl -fsSI http://127.0.0.1:18081/ | grep -qi "content-security-policy: default-src 'none'"
+          docker rm -f note-test
+
+      - name: Scan images (trivy)
+        run: |
+          set -euo pipefail
+          for img in rima/note:ci rima/caddy:ci; do
+            "$RUNNER_TEMP/bin/trivy" image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed "$img"
+          done
+
+  publish:
+    name: Push, sign and attest images
+    needs: [images]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: production
+    permissions:
+      contents: read
+      packages: write      # push to ghcr.io
+      id-token: write      # Sigstore keyless signing
+      attestations: write  # SLSA build provenance
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: services/note/go.mod
+          cache: false
+
+      - name: Install trivy
+        run: GOBIN="$RUNNER_TEMP/bin" go install "github.com/aquasecurity/trivy/cmd/trivy@${TRIVY_VERSION}"
+
+      - name: Build images
+        run: |
+          set -euo pipefail
+          export SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          docker build -t rima/note:ci services/note
+          docker build -t rima/caddy:ci deploy/caddy
+
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+
+      - name: Push, sign, attach SBOM
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+          : > "$RUNNER_TEMP/digests.txt"
+          for svc in note caddy; do
+            ref="ghcr.io/${owner}/rima-${svc}"
+            docker tag "rima/${svc}:ci" "${ref}:sha-${GITHUB_SHA}"
+            docker push "${ref}:sha-${GITHUB_SHA}"
+            digest="$(docker inspect --format '{{index .RepoDigests 0}}' "${ref}:sha-${GITHUB_SHA}")"
+            digest="${digest##*@}"
+            # Keyless signature: the certificate binds the image to this repo,
+            # workflow, ref and commit; the server's deployer verifies all of them.
+            cosign sign --yes "${ref}@${digest}"
+            "$RUNNER_TEMP/bin/trivy" image --format cyclonedx --output "$RUNNER_TEMP/sbom-${svc}.json" "${ref}@${digest}"
+            cosign attest --yes --type cyclonedx --predicate "$RUNNER_TEMP/sbom-${svc}.json" "${ref}@${digest}"
+            echo "${svc} ${ref} ${digest}" >> "$RUNNER_TEMP/digests.txt"
+          done
+          docker logout ghcr.io
+          cat "$RUNNER_TEMP/digests.txt"
+
+      - name: Read digests
+        id: d
+        run: |
+          set -euo pipefail
+          while read -r svc ref digest; do
+            echo "${svc}_name=${ref}" >> "$GITHUB_OUTPUT"
+            echo "${svc}_digest=${digest}" >> "$GITHUB_OUTPUT"
+          done < "$RUNNER_TEMP/digests.txt"
+
+      - name: SLSA provenance for note
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ steps.d.outputs.note_name }}
+          subject-digest: ${{ steps.d.outputs.note_digest }}
+          push-to-registry: true
+
+      - name: SLSA provenance for caddy
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ steps.d.outputs.caddy_name }}
+          subject-digest: ${{ steps.d.outputs.caddy_digest }}
+          push-to-registry: true

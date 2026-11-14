@@ -141,14 +141,31 @@
     el.hidden = false;
   }
 
-  async function copyFrom(input, button) {
+  // Shows exactly one of the given sections.
+  function showOnly(sections, visible) {
+    for (const s of sections) s.hidden = s !== visible;
+    window.scrollTo(0, 0);
+  }
+
+  // Copies text; if the Clipboard API is unavailable or refused, selects the
+  // element's text so the user can press Ctrl+C.
+  async function copyText(text, button, sourceEl) {
+    const label = button.querySelector("span") || button;
+    const old = label.textContent;
+    const done = (msg) => {
+      label.textContent = msg;
+      setTimeout(() => (label.textContent = old), 1600);
+    };
     try {
-      await navigator.clipboard.writeText(input.value);
-      const old = button.textContent;
-      button.textContent = "Скопировано";
-      setTimeout(() => (button.textContent = old), 1500);
+      await navigator.clipboard.writeText(text);
+      done("Скопировано");
     } catch {
-      input.select();
+      const range = document.createRange();
+      range.selectNodeContents(sourceEl);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      done("Выделено, нажмите Ctrl+C");
     }
   }
 
@@ -156,35 +173,61 @@
     return te.encode(s).length;
   }
 
+  const TTL_WORDS = { 3600: "1 час", 86400: "1 день", 604800: "7 дней" };
+  const fmtInt = new Intl.NumberFormat("ru-RU");
+  const fmtTime = new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" });
+
   // ---------- create page ----------
 
   function initCreate() {
+    const view = $("create-view");
     const form = $("create-form");
     const text = $("text");
-    const ttl = $("ttl");
     const counter = $("counter");
     const submit = $("submit");
     const err = $("error");
     const result = $("result");
     const link = $("link");
     const copy = $("copy");
+    const share = $("share");
     const again = $("again");
+    const ttlFact = $("ttl-fact");
+    const ttlButtons = Array.from(document.querySelectorAll("#ttl button[data-ttl]"));
+
+    let ttl = 86400;
+    for (const b of ttlButtons) {
+      if (b.getAttribute("aria-pressed") === "true") ttl = Number(b.dataset.ttl);
+      b.addEventListener("click", () => {
+        const v = Number(b.dataset.ttl);
+        if (!(v in TTL_WORDS)) return; // whitelist, the server re-checks anyway
+        ttl = v;
+        for (const x of ttlButtons) x.setAttribute("aria-pressed", String(x === b));
+      });
+    }
 
     const updateCounter = () => {
       const n = utf8Length(text.value);
-      counter.textContent = `${n} / ${MAX_TEXT_BYTES} байт`;
+      counter.textContent = `${fmtInt.format(n)} / ${fmtInt.format(MAX_TEXT_BYTES)} байт`;
       counter.classList.toggle("over", n > MAX_TEXT_BYTES);
     };
-    text.addEventListener("input", updateCounter);
+    text.addEventListener("input", () => {
+      updateCounter();
+      err.hidden = true;
+    });
     updateCounter();
+
+    // Web Share passes the link to an app the user picks, same trust as copying it.
+    const canShare = typeof navigator.share === "function";
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       err.hidden = true;
 
       const value = text.value;
-      if (value.trim() === "") return showError(err, "Сообщение пустое.");
-      if (utf8Length(value) > MAX_TEXT_BYTES) return showError(err, "Сообщение слишком длинное.");
+      if (value.trim() === "") return showError(err, "Записка пустая. Напишите текст.");
+      if (utf8Length(value) > MAX_TEXT_BYTES) {
+        return showError(err, `Слишком длинно: максимум ${fmtInt.format(MAX_TEXT_BYTES)} байт.`);
+      }
 
       submit.disabled = true;
       try {
@@ -199,23 +242,23 @@
         const { status, data } = await postJSON("/api/v1/notes", {
           ciphertext: b64urlEncode(blob),
           token_hash: b64urlEncode(tokenHash),
-          ttl: Number(ttl.value),
+          ttl,
         });
 
         if (status === 429) throw new UserError("Слишком много запросов. Подождите минуту.");
         if (status === 503) throw new UserError("Сервис перегружен. Попробуйте позже.");
         if (status !== 201 || !data || typeof data.id !== "string" || !ID_RE.test(data.id)) {
-          throw new UserError("Не удалось создать сообщение. Попробуйте ещё раз.");
+          throw new UserError("Не удалось создать записку. Попробуйте ещё раз.");
         }
 
-        link.value = `${location.origin}/n/${data.id}#${b64urlEncode(raw)}`;
+        link.textContent = `${location.origin}/n/${data.id}#${b64urlEncode(raw)}`;
         raw.fill(0);
         text.value = "";
         updateCounter();
-        form.hidden = true;
-        result.hidden = false;
-        link.focus();
-        link.select();
+        ttlFact.textContent = `Удалится через ${TTL_WORDS[ttl]}, если её не откроют.`;
+        share.hidden = !canShare;
+        showOnly([view, result], result);
+        copy.focus();
       } catch (ex) {
         showError(err, ex instanceof UserError ? ex.message : "Что-то пошло не так. Попробуйте ещё раз.");
       } finally {
@@ -223,11 +266,17 @@
       }
     });
 
-    copy.addEventListener("click", () => copyFrom(link, copy));
+    copy.addEventListener("click", () => copyText(link.textContent, copy, link));
+    share.addEventListener("click", async () => {
+      try {
+        await navigator.share({ url: link.textContent });
+      } catch {
+        /* user closed the share sheet */
+      }
+    });
     again.addEventListener("click", () => {
-      link.value = "";
-      result.hidden = true;
-      form.hidden = false;
+      link.textContent = "";
+      showOnly([view, result], view);
       text.focus();
     });
   }
@@ -239,8 +288,12 @@
     const reveal = $("reveal");
     const err = $("error");
     const result = $("result");
+    const gone = $("gone");
+    const broken = $("broken");
     const message = $("message");
+    const openedAt = $("opened-at");
     const copy = $("copy");
+    const views = [intro, result, gone, broken];
 
     const id = location.pathname.split("/")[2] || "";
     const keyStr = location.hash.slice(1);
@@ -248,8 +301,7 @@
     history.replaceState(null, "", location.pathname);
 
     if (!ID_RE.test(id) || !KEY_RE.test(keyStr)) {
-      intro.hidden = true;
-      return showError(err, "Ссылка повреждена: в ней нет ключа или он неполный. Попросите отправителя прислать ссылку целиком.");
+      return showOnly(views, broken);
     }
 
     reveal.addEventListener("click", async () => {
@@ -264,28 +316,25 @@
         const { status, data } = await postJSON(`/api/v1/notes/${id}/take`, { token: b64urlEncode(token) });
         token.fill(0);
 
-        if (status === 404) {
-          intro.hidden = true;
-          return showError(err, "Сообщение не найдено. Его уже прочитали, у него истёк срок или ссылка неверна.");
-        }
+        if (status === 404) return showOnly(views, gone);
         if (status === 429) throw new UserError("Слишком много запросов. Подождите минуту.");
         if (status !== 200 || !data || typeof data.ciphertext !== "string") {
-          throw new UserError("Не удалось открыть сообщение.");
+          throw new UserError("Не удалось открыть записку. Попробуйте ещё раз.");
         }
 
         const plain = await decrypt(encKey, b64urlDecode(data.ciphertext));
-        message.value = unpad(plain);
+        message.textContent = unpad(plain);
         plain.fill(0);
 
-        intro.hidden = true;
-        result.hidden = false;
+        openedAt.textContent = `открыта ${fmtTime.format(new Date())} · удалена с сервера`;
+        showOnly(views, result);
       } catch (ex) {
         reveal.disabled = false;
-        showError(err, ex instanceof UserError ? ex.message : "Не удалось открыть сообщение: ссылка повреждена или данные изменены.");
+        showError(err, ex instanceof UserError ? ex.message : "Не удалось открыть записку: ссылка повреждена или данные изменены.");
       }
     });
 
-    copy.addEventListener("click", () => copyFrom(message, copy));
+    copy.addEventListener("click", () => copyText(message.textContent, copy, message));
   }
 
   // ---------- boot ----------

@@ -13,6 +13,7 @@ const contentSecurityPolicy = "default-src 'none'; " +
 	"style-src 'self'; " +
 	"img-src 'self'; " +
 	"connect-src 'self'; " +
+	"font-src 'self'; " +
 	"base-uri 'none'; " +
 	"form-action 'none'; " +
 	"frame-ancestors 'none'; " +

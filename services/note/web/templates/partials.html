@@ -1,0 +1,47 @@
+{{define "head"}}<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0f12" media="(prefers-color-scheme: dark)">
+<title>note · Trebuchet</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/note.css" integrity="{{.CSSIntegrity}}">
+<script src="/static/theme.js" integrity="{{.ThemeIntegrity}}"></script>
+<script src="/static/note.js" integrity="{{.JSIntegrity}}" defer></script>
+{{end}}
+
+{{define "icons"}}<svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <!-- Tabler Icons (MIT), outline, stroke 1.75 via CSS -->
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M9 15l6 -6"/><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464"/><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463"/></symbol>
+  <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M6.5 7h11"/><path d="M6.5 17h11"/><path d="M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1z"/><path d="M6 4v2a6 6 0 1 0 12 0v-2a1 1 0 0 0 -1 -1h-10a1 1 0 0 0 -1 1z"/></symbol>
+  <symbol id="i-flameoff" viewBox="0 0 24 24"><path d="M12 10.941c2.333 -3.308 .167 -7.823 -1 -8.941c0 3.395 -2.235 5.299 -3.667 6.706c-1.43 1.408 -2.333 3.621 -2.333 5.588c0 3.704 3.134 6.706 7 6.706s7 -3.002 7 -6.706c0 -1.712 -1.232 -4.403 -2.333 -5.588c-2.084 3.353 -3.257 3.353 -4.667 2.235"/><path d="M3 3l18 18"/></symbol>
+  <symbol id="i-half" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M12 3v18"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z"/><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M8 9h-1a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-8a2 2 0 0 0 -2 -2h-1"/><path d="M12 14v-11"/><path d="M9 6l3 -3l3 3"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z"/><path d="M12 16h.01"/></symbol>
+</svg>
+{{end}}
+
+{{define "brand"}}<a class="brand" href="/" aria-label="Trebuchet note, новая записка">
+    <svg class="mark" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect class="mk-bg" width="24" height="24" rx="5"/><path class="mk-arm" d="M6.5 17.5L16 8" stroke-width="2.2" stroke-linecap="round"/><rect class="mk-weight" x="14.5" y="14.5" width="4.5" height="4.5"/></svg>
+    Trebuchet
+  </a>
+  <span class="tag">note</span>
+  <span class="sp"></span>
+  <button class="iconbtn" id="theme" type="button" aria-label="Тема: авто. Переключить" data-value="auto">
+    <svg class="i" data-icon="auto" aria-hidden="true"><use href="#i-half"/></svg>
+    <svg class="i" data-icon="light" aria-hidden="true" hidden><use href="#i-sun"/></svg>
+    <svg class="i" data-icon="dark" aria-hidden="true" hidden><use href="#i-moon"/></svg>
+  </button>
+{{end}}
+
+{{define "footer"}}<footer class="site gut">
+  <span class="facts">AES-256-GCM в браузере · ключ после # не уходит на сервер · без cookies и аналитики</span>
+  <a href="https://rima.su/">Trebuchet</a>
+</footer>
+{{end}}

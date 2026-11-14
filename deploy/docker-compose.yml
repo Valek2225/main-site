@@ -1,4 +1,4 @@
-name: rima
+name: trebuchet
 
 # Every service is a separate container and image: deploying one never restarts
 # the others. In production the deployer writes
@@ -21,7 +21,7 @@ x-hardening: &hardening
 services:
   caddy:
     <<: *hardening
-    image: ${CADDY_IMAGE:-rima/caddy:local}
+    image: ${CADDY_IMAGE:-trebuchet/caddy:local}
     build: ./caddy
     # No capabilities at all: low ports are allowed for unprivileged users
     # inside this network namespace only.
@@ -43,16 +43,37 @@ services:
     depends_on:
       note:
         condition: service_healthy
+      vault:
+        condition: service_healthy
 
   note:
     <<: *hardening
-    image: ${NOTE_IMAGE:-rima/note:local}
+    image: ${NOTE_IMAGE:-trebuchet/note:local}
     build: ../services/note
     environment:
       NOTE_MAX_NOTES: "100000"
       NOTE_MAX_MB: "256"
     mem_limit: 512m
     memswap_limit: 512m # no swap: notes must never touch the disk
+    pids_limit: 100
+    networks: [internal]
+
+  vault:
+    <<: *hardening
+    image: ${VAULT_IMAGE:-trebuchet/vault:local}
+    build: ../services/vault
+    # Optional VAULT_BOOTSTRAP_HASH: SHA-256 of the one-time code for the first
+    # admin (`vault bootstrap-code`). Not a secret: the code never reaches the server.
+    env_file:
+      - path: /etc/trebuchet/vault.env
+        required: false
+    # Host directories must exist, be owned by the container user (65532,
+    # shifted by userns-remap) and have mode 0700; otherwise the service refuses to start.
+    volumes:
+      - ${TREBUCHET_DATA:-/srv/trebuchet/data}/vault:/data
+      - ${TREBUCHET_DATA:-/srv/trebuchet/data}/snapshots:/snapshots
+    mem_limit: 256m
+    memswap_limit: 256m # no swap: session keys must never touch the disk
     pids_limit: 100
     networks: [internal]
 

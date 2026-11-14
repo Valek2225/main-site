@@ -2,10 +2,10 @@
 //
 // Protocol v1 (must match internal/server/api.go):
 //   K       = 32 random bytes, lives only in the URL fragment (#...), never sent to the server
-//   encKey  = HKDF-SHA256(K, salt = 32 zero bytes, info = "rima-note v1 enc")  -> AES-256-GCM key
-//   token   = HKDF-SHA256(K, salt = 32 zero bytes, info = "rima-note v1 auth") -> 32 bytes
+//   encKey  = HKDF-SHA256(K, salt = 32 zero bytes, info = "trebuchet-note v1 enc")  -> AES-256-GCM key
+//   token   = HKDF-SHA256(K, salt = 32 zero bytes, info = "trebuchet-note v1 auth") -> 32 bytes
 //   padded  = uint32be(len(text)) || utf8(text) || zeros, total size in PADDED_SIZES
-//   blob    = nonce(12) || AES-GCM(encKey, nonce, padded, aad = "rima-note v1")
+//   blob    = nonce(12) || AES-GCM(encKey, nonce, padded, aad = "trebuchet-note v1")
 //   create: server gets blob + SHA-256(token) + ttl, returns id
 //   read:   server gets token, returns blob once and deletes it
 //
@@ -13,7 +13,7 @@
 "use strict";
 
 (() => {
-  const VERSION = "rima-note v1";
+  const VERSION = "trebuchet-note v1";
   const PADDED_SIZES = [512, 2048, 8192, 32768, 65536];
   const MAX_TEXT_BYTES = PADDED_SIZES[PADDED_SIZES.length - 1] - 4;
   const ID_RE = /^[A-Za-z0-9_-]{22}$/;

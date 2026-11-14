@@ -226,7 +226,6 @@ jobs:
             cosign attest --yes --type cyclonedx --predicate "$RUNNER_TEMP/sbom-${svc}.json" "${ref}@${digest}"
             echo "${svc} ${ref} ${digest}" >> "$RUNNER_TEMP/digests.txt"
           done
-          docker logout ghcr.io
           cat "$RUNNER_TEMP/digests.txt"
 
       - name: Read digests
@@ -251,3 +250,7 @@ jobs:
           subject-name: ${{ steps.d.outputs.caddy_name }}
           subject-digest: ${{ steps.d.outputs.caddy_digest }}
           push-to-registry: true
+
+      - name: Log out of ghcr.io
+        if: always()
+        run: docker logout ghcr.io
